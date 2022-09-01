@@ -12,21 +12,39 @@ namespace QrCodePayments.Controllers
         public ActionResult Index()
         {
 
-            RazorpayClient RC = new RazorpayClient("rzp_test_4cMvJ6ZpAWMdsS", "dXbpU75yzn3IQPoKKkjEOf44");
+            //RazorpayClient RC = new RazorpayClient("rzp_test_4cMvJ6ZpAWMdsS", "dXbpU75yzn3IQPoKKkjEOf44");
+            RazorpayClient RC = new RazorpayClient("rzp_live_M0bVKbPL25d5FZ", "E33dJnsBijTSJdo8vIFNJfiz");
 
-            Dictionary<string, object> attributes = new Dictionary<string, object>();
-            //attributes.Add("type", "upi_qr");
-           // attributes.Add("fixed_amount", "true");
+
+
+            int recordcount = 0;
+            int skipCount = 0;
+
             List<QrCode> Data = new List<QrCode>();
-            try
+            do
             {
-                Data = RC.QrCode.fetchAll();
-            }
-            catch (Exception ex)
-            {
+                try
+                {
+                    Dictionary<string, object> attributes = new Dictionary<string, object>();
+                    attributes.Add("count", 100);
+                    attributes.Add("skip", skipCount);
+                    attributes.Add("from", 1659308400);
+                    attributes.Add("to", 1661986800);
 
-                throw;
-            }
+                    var tmpdata = RC.QrCode.fetchAll(attributes);
+                    Data.AddRange(tmpdata);
+                    recordcount = tmpdata.Count();
+                    skipCount = skipCount + recordcount;
+                }
+                catch (Exception ex)
+                {
+                    throw;
+                }
+
+            } while (recordcount == 100);
+
+
+
 
             List<Models.Root> rt = new List<Models.Root>();
             if (Data.Count > 0)
@@ -67,20 +85,26 @@ namespace QrCodePayments.Controllers
                                 break;
                             case nameof(tt.type):
                                 tt.type = item1.Value;
-                                break;
+                                break; 
                             case nameof(tt.payment_amount):
                                 tt.payment_amount = item1.Value;
+                                break;
+                            case nameof(tt.status):
+                                tt.status = item1.Value;
+                                break;
+                            case nameof(tt.name):
+                                tt.name = item1.Value;
                                 break;
                         }
 
                     }
-                    rt.Add(tt);
+                    if (tt.fixed_amount == true && Convert.ToInt32(tt.payments_amount_received) > 0 && tt.status == "closed" && Convert.ToInt32(tt.fixed_amount) > 0 && tt.type == "upi_qr")
+                    {
+                        rt.Add(tt);
+                    }
 
                 }
             }
-
-
-
             return View();
         }
 
